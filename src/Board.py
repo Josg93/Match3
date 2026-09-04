@@ -25,6 +25,7 @@ class Board:
         self.matches: List[List[Tile]] = []
         self.tiles: List[List[Tile]] = []
         self._initialize_tiles()
+        self.powerups = []
 
     def render(self, surface: pygame.Surface) -> None:
         for row in self.tiles:
@@ -59,6 +60,48 @@ class Board:
                 self.tiles[i][j] = Tile(
                     i, j, color, random.randint(0, settings.NUM_VARIETIES - 1)
                 )
+
+    def has_possible_matches(self) -> bool:
+        for i in range(settings.BOARD_HEIGHT):
+            for j in range(settings.BOARD_WIDTH):
+                tile1 = self.tiles[i][j]
+                if tile1 is None:
+                    continue
+                
+                # Probar intercambio con el vecino derecho (j + 1)
+                if j + 1 < settings.BOARD_WIDTH:
+                    tile2 = self.tiles[i][j + 1]
+                    if tile2 is not None:
+                        # Intercambio lógico temporal
+                        self.tiles[i][j], self.tiles[i][j + 1] = tile2, tile1
+                        tile1.i, tile1.j, tile2.i, tile2.j = i, j + 1, i, j
+                        
+                        matches = self.calculate_matches_for([tile1, tile2])
+                        
+                        # Revertir intercambio lógico
+                        self.tiles[i][j], self.tiles[i][j + 1] = tile1, tile2
+                        tile1.i, tile1.j, tile2.i, tile2.j = i, j, i, j + 1
+                        
+                        if matches is not None:
+                            return True
+
+                # Probar intercambio con el vecino inferior (i + 1)
+                if i + 1 < settings.BOARD_HEIGHT:
+                    tile2 = self.tiles[i + 1][j]
+                    if tile2 is not None:
+                        # Intercambio lógico temporal
+                        self.tiles[i][j], self.tiles[i + 1][j] = tile2, tile1
+                        tile1.i, tile1.j, tile2.i, tile2.j = i + 1, j, i, j
+                        
+                        matches = self.calculate_matches_for([tile1, tile2])
+                        
+                        # Revertir intercambio lógico
+                        self.tiles[i][j], self.tiles[i + 1][j] = tile1, tile2
+                        tile1.i, tile1.j, tile2.i, tile2.j = i, j, i + 1, j
+                        
+                        if matches is not None:
+                            return True
+        return False
 
     def _calculate_match_rec(self, tile: Tile) -> Set[Tile]:
         if tile in self.in_stack:
@@ -131,9 +174,57 @@ class Board:
         self.in_stack.remove(tile)
         return match
 
+    def _calculate_power_up(self, last_tile : Tile ,type : str):
+        i = last_tile.i
+        j = last_tile.j
+        color = last_tile.color
+        variety = last_tile.variety
+        self.powerups.append((i,j,color,variety,type))
+
+    def generate_power_ups(self) -> None:
+        for powerup in self.powerups:
+            i = powerup[0]
+            j = powerup[1]
+            color = powerup [2]
+            variety = powerup[3]
+            power = powerup[4]
+            
+            self.tiles[i][j] = Tile(i,j,color,variety,power)
+        self.powerups = []    
+
+    # Método para activar un power-up (Limpia-Líneas o Bomba de Color)
+    def activate_power_up(self, tile: Tile) -> List[Tile]:
+        # Lista de baldosas afectadas por la activación del power-up
+        matched_tiles = [tile]
+        
+        # Si es Limpia-Líneas (4 baldosas), destruye su fila y columna completas
+        if tile.power_up == "line_clear":
+            # Añadir todas las baldosas de la misma fila i
+            for j_idx in range(settings.BOARD_WIDTH):
+                t = self.tiles[tile.i][j_idx]
+                if t and t not in matched_tiles:
+                    matched_tiles.append(t)
+            # Añadir todas las baldosas de la misma columna j
+            for i_idx in range(settings.BOARD_HEIGHT):
+                t = self.tiles[i_idx][tile.j]
+                if t and t not in matched_tiles:
+                    matched_tiles.append(t)
+                    
+        # Si es Bomba de Color (5+ baldosas), destruye todas las baldosas del mismo color en el tablero
+        elif tile.power_up == "color_bomb":
+            for row in self.tiles:
+                for t in row:
+                    if t and t.color == tile.color and t not in matched_tiles:
+                        matched_tiles.append(t)
+                        
+        # Consumir el power-up para que no se active repetidamente
+        tile.power_up = None
+        return matched_tiles
+
     def calculate_matches_for(
-        self, new_tiles: List[Tile]
+        self, new_tiles: List[Tile], last_moved: Optional[Tile] = None
     ) -> Optional[List[List[Tile]]]:
+        self.matches = []
         self.in_match: Set[Tile] = set()
         self.in_stack: Set[Tile] = set()
 
@@ -143,6 +234,20 @@ class Board:
             match = self._calculate_match_rec(tile)
             if len(match) > 0:
                 self.matches.append(match)
+
+            if len(match) >= 4:
+                power_tile = None
+                if last_moved is not None and last_moved in match:
+                    power_tile = last_moved
+                elif len(new_tiles) > 0 and new_tiles[0] in match:
+                    power_tile = new_tiles[0]
+                else:
+                    power_tile = match[0]
+
+                if len(match) == 4:
+                    self._calculate_power_up(last_tile=power_tile, type="line_clear")
+                elif len(match) >= 5:
+                    self._calculate_power_up(last_tile=power_tile, type="color_bomb")
 
         delattr(self, "in_match")
         delattr(self, "in_stack")
