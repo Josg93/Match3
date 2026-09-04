@@ -53,9 +53,9 @@ class Board:
         ]
         for i in range(settings.BOARD_HEIGHT):
             for j in range(settings.BOARD_WIDTH):
-                color = random.randint(14, settings.NUM_COLORS - 1)
+                color = random.randint(0, settings.NUM_COLORS - 1)
                 while self._is_match_generated(i, j, color):
-                    color = random.randint(14, settings.NUM_COLORS - 1)
+                    color = random.randint(0, settings.NUM_COLORS - 1)
 
                 self.tiles[i][j] = Tile(
                     i, j, color, random.randint(0, settings.NUM_VARIETIES - 1)
@@ -191,6 +191,7 @@ class Board:
         for powerup in self.powerups:
             self.tiles[powerup.i][powerup.j] = powerup  
         self.powerups = []
+        
    
     def activate_power_up(self, tile: Tile) -> List[Tile]:
         # Lista de baldosas afectadas por la activación del power-up
