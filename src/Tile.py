@@ -18,7 +18,7 @@ import settings
 class Tile:
     # Añadimos soporte para power_up (None, "line_clear", "color_bomb")
     def __init__(self, i: int, j: int, color: int, variety: int, power_up: Optional[str] = None) -> None:
-   
+       
         self.i = i
         self.j = j
         self.x = self.j * settings.TILE_SIZE
@@ -29,6 +29,7 @@ class Tile:
         self.alpha_surface = pygame.Surface(
             (settings.TILE_SIZE, settings.TILE_SIZE), pygame.SRCALPHA
         )
+        
         
         # A surface that supports alpha to highlight a selected tile (or power-up)
         self.tile_alpha_surface = pygame.Surface(
@@ -42,9 +43,10 @@ class Tile:
         )
         
         
-        
     def is_power_up(self):
-        return self.power_up
+        if self.power_up is not None:
+            return True
+        return False
     
     def render(self, surface: pygame.Surface, offset_x: int, offset_y: int) -> None:
         self.alpha_surface.blit(
@@ -68,4 +70,12 @@ class Tile:
         )
 
         if self.power_up is not None:
-            surface.blit(self.tile_alpha_surface, (self.x + offset_x, self.y + offset_y))
+            # Render dorado border para power-ups cuando están seleccionados o hover
+            pygame.draw.rect(
+                self.alpha_surface,
+                (255, 215, 0, 255),  # Color dorado
+                pygame.Rect(0, 0, settings.TILE_SIZE, settings.TILE_SIZE),
+                border_radius=7,
+                width=4,
+            )
+            surface.blit(self.alpha_surface, (self.x + offset_x, self.y + offset_y))

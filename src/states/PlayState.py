@@ -33,7 +33,7 @@ class PlayState(BaseState):
         
         self.timer = settings.LEVEL_TIME
 
-        self.goal_score = self.level * 1.25 * 1000
+        self.goal_score = self.level * 1.25 * 3000
 
         # A surface that supports alpha to highlight a selected tile
         self.tile_alpha_surface = pygame.Surface(
@@ -74,6 +74,22 @@ class PlayState(BaseState):
             Timer.clear()
             settings.SOUNDS["next-level"].play()
             self.state_machine.change("begin", level=self.level + 1, score=self.score)
+
+    def _activate_power_up_directly(self, tile: Tile) -> None:
+        # Activar el power-up inmediatamente cuando se hace clic sobre él
+        power_up_matches = self.board.activate_power_up(tile)
+        if power_up_matches is not None:
+            self.board.matches.append(power_up_matches)
+            self.board.remove_matches()
+        # Continuar con la lógica de caída de fichas
+        falling_tiles = self.board.get_falling_tiles()
+        Timer.tween(
+            0.70,
+            falling_tiles,
+            on_finish=lambda: self._calculate_matches(
+                [item[0] for item in falling_tiles], last_moved=None
+            ),
+        )
 
     def render(self, surface: pygame.Surface) -> None:
         self.board.render(surface)
@@ -142,8 +158,16 @@ class PlayState(BaseState):
             j = (pos_x - self.board.x) // settings.TILE_SIZE
         
             if 0 <= i < settings.BOARD_HEIGHT and 0 <= j < settings.BOARD_WIDTH:
+                clicked_tile = self.board.tiles[i][j]
+                
+                # Si se hizo clic en un power-up, activarlo directamente
+                if clicked_tile and clicked_tile.is_power_up():
+                    self.active = False
+                    self._activate_power_up_directly(clicked_tile)
+                    return
+                
                 self.is_dragging = True
-                self.selected_tile = self.board.tiles[i][j]
+                self.selected_tile = clicked_tile
                 self.selected_grid_i, self.selected_grid_j = i, j
                 
         #al mover mouse y click presionado
@@ -212,6 +236,7 @@ class PlayState(BaseState):
     def _calculate_matches(self, tiles: List, user_swap=False, last_moved: Optional[Tile] = None) -> None:
         matches = self.board.calculate_matches_for(tiles, last_moved)
         if matches is None: 
+            #si no hay matches y fue jugada del ususario
             if user_swap == True:    
                 tile1 = tiles[0]
                 tile2 = tiles[1]
@@ -240,6 +265,7 @@ class PlayState(BaseState):
                     )
                 self.active = True
                 return
+            #si no hay matches y fue falling tiles
             else:
                 while not self.board.has_possible_matches():
                     self.board._initialize_tiles()
@@ -250,11 +276,12 @@ class PlayState(BaseState):
         settings.SOUNDS["match"].play()
         for match in matches:
             self.score += len(match) * 50
+          
         self.board.remove_matches()
         self.board.generate_power_ups()
         falling_tiles = self.board.get_falling_tiles()
         Timer.tween(
-         0.25,
+         0.70,
          falling_tiles,
          on_finish=lambda: self._calculate_matches(
              [item[0] for item in falling_tiles], last_moved=None

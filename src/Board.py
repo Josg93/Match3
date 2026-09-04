@@ -55,7 +55,7 @@ class Board:
             for j in range(settings.BOARD_WIDTH):
                 color = random.randint(15, settings.NUM_COLORS - 1)
                 while self._is_match_generated(i, j, color):
-                    color = random.randint(0, settings.NUM_COLORS - 1)
+                    color = random.randint(15, settings.NUM_COLORS - 1)
 
                 self.tiles[i][j] = Tile(
                     i, j, color, random.randint(0, settings.NUM_VARIETIES - 1)
@@ -174,30 +174,24 @@ class Board:
         self.in_stack.remove(tile)
         return match
 
-    def _calculate_power_up(self, last_tile : Tile ,type : str):
+    def calculate_power_ups(self, last_tile: Tile, type: str) -> None:
+        # Generar power-up en la posición de la última baldosa movida,
+        # heredando el color de las baldosas combinadas
         i = last_tile.i
         j = last_tile.j
-        color = last_tile.color
-        variety = last_tile.variety
-        self.powerups.append((i,j,color,variety,type))
+        powerup = Tile(i,j,last_tile.color,last_tile.variety, type)
+        self.powerups.append(powerup) 
 
-    def generate_power_ups(self) -> None:
+    def generate_power_ups(self):
         for powerup in self.powerups:
-            i = powerup[0]
-            j = powerup[1]
-            color = powerup [2]
-            variety = powerup[3]
-            power = powerup[4]
-            
-            self.tiles[i][j] = Tile(i,j,color,variety,power)
-        self.powerups = []    
-
+            self.tiles[powerup.i][powerup.j] = powerup  
+   
    
     def activate_power_up(self, tile: Tile) -> List[Tile]:
         # Lista de baldosas afectadas por la activación del power-up
         matched_tiles = [tile]
         
-        # Si es Limpia-Líneas (4 baldosas), destruye su fila y columna completas
+        #Si es Limpia-Líneas (4 baldosas), destruye su fila y columna completas
         if tile.power_up == "line_clear":
             # Añadir todas las baldosas de la misma fila i
             for j_idx in range(settings.BOARD_WIDTH):
@@ -243,13 +237,17 @@ class Board:
                     power_tile = match[0]
 
                 if len(match) == 4:
-                    self._calculate_power_up(last_tile=power_tile, type="line_clear")
+                    self.calculate_power_ups(last_tile=power_tile, type="line_clear")
                 elif len(match) >= 5:
-                    self._calculate_power_up(last_tile=power_tile, type="color_bomb")
+                    self.calculate_power_ups(last_tile=power_tile, type="color_bomb")
+                    
             #verificar que un powerup haya hecho match 
-            if len(match) > 0 and tile.is_power_up is not None: 
-                self.activate_power_up(tile)
-
+            for tile in match:
+                if tile.power_up is not None:
+                    power_up_matches =  self.activate_power_up(tile)
+                    if power_up_matches is not None:
+                        self.matches.append(power_up_matches)    
+                    
         delattr(self, "in_match")
         delattr(self, "in_stack")
 
@@ -258,8 +256,9 @@ class Board:
     def remove_matches(self) -> None:
         for match in self.matches:
             for tile in match:
-                self.tiles[tile.i][tile.j] = None
-
+                if tile.power_up is not None:
+                    continue
+                self.tiles[tile.i][tile.j] = None   
         self.matches = []
 
     def get_falling_tiles(self) -> Tuple[Any, Dict[str, Any]]:
