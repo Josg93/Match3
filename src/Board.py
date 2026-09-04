@@ -246,6 +246,9 @@ class Board:
                     self._calculate_power_up(last_tile=power_tile, type="line_clear")
                 elif len(match) >= 5:
                     self._calculate_power_up(last_tile=power_tile, type="color_bomb")
+            #verificar que un powerup haya hecho match 
+            if len(match) > 0 and tile.is_power_up is not None: 
+                self.activate_power_up(tile)
 
         delattr(self, "in_match")
         delattr(self, "in_stack")
