@@ -53,7 +53,7 @@ class Board:
         ]
         for i in range(settings.BOARD_HEIGHT):
             for j in range(settings.BOARD_WIDTH):
-                color = random.randint(0, settings.NUM_COLORS - 1)
+                color = random.randint(15, settings.NUM_COLORS - 1)
                 while self._is_match_generated(i, j, color):
                     color = random.randint(0, settings.NUM_COLORS - 1)
 
@@ -192,7 +192,7 @@ class Board:
             self.tiles[i][j] = Tile(i,j,color,variety,power)
         self.powerups = []    
 
-    # Método para activar un power-up (Limpia-Líneas o Bomba de Color)
+   
     def activate_power_up(self, tile: Tile) -> List[Tile]:
         # Lista de baldosas afectadas por la activación del power-up
         matched_tiles = [tile]
@@ -221,9 +221,7 @@ class Board:
         tile.power_up = None
         return matched_tiles
 
-    def calculate_matches_for(
-        self, new_tiles: List[Tile], last_moved: Optional[Tile] = None
-    ) -> Optional[List[List[Tile]]]:
+    def calculate_matches_for(self, new_tiles: List[Tile], last_moved: Optional[Tile] = None) -> Optional[List[List[Tile]]]:
         self.matches = []
         self.in_match: Set[Tile] = set()
         self.in_stack: Set[Tile] = set()

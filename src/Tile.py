@@ -30,6 +30,18 @@ class Tile:
             (settings.TILE_SIZE, settings.TILE_SIZE), pygame.SRCALPHA
         )
         
+        # A surface that supports alpha to highlight a selected tile (or power-up)
+        self.tile_alpha_surface = pygame.Surface(
+            (settings.TILE_SIZE, settings.TILE_SIZE), pygame.SRCALPHA
+        )
+        pygame.draw.rect(
+            self.tile_alpha_surface,
+            (255, 255, 255, 150),
+            pygame.Rect(0, 0, settings.TILE_SIZE, settings.TILE_SIZE),
+            border_radius=7,
+        )
+        
+        
         
     def is_power_up(self):
         return self.power_up
@@ -48,26 +60,12 @@ class Tile:
         )
         
         
-        # Si la baldosa tiene un power-up activo, dibujamos un indicador visual distintivo encima
-        if self.power_up == "line_clear":
-            pygame.draw.rect(
-                self.alpha_surface,
-                (255, 255, 255, 220),
-                pygame.Rect(2, 2, settings.TILE_SIZE - 4, settings.TILE_SIZE - 4),
-                width=3,
-                border_radius=5,
-            )
-        elif self.power_up == "color_bomb":
-           pygame.draw.circle(
-                self.alpha_surface,
-                (255, 215, 0, 240),
-                (settings.TILE_SIZE // 2, settings.TILE_SIZE // 2),
-                settings.TILE_SIZE // 3,
-                width=4,
-            )
         surface.blit(self.alpha_surface, (self.x + 2 + offset_x, self.y + 2 + offset_y))
         surface.blit(
             settings.TEXTURES["tiles"],
             (self.x + offset_x, self.y + offset_y),
             settings.FRAMES["tiles"][self.color][self.variety],
         )
+
+        if self.power_up is not None:
+            surface.blit(self.tile_alpha_surface, (self.x + offset_x, self.y + offset_y))
