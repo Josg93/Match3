@@ -45,7 +45,7 @@ NUM_COLORS = 18
 BACKGROUND_SCROLL_SPEED = 40
 BACKGROUND_LOOPING_POINT = -1024 + VIRTUAL_WIDTH - 4 + 51
 
-LEVEL_TIME = 100
+LEVEL_TIME = 120
 
 BASE_DIR = Path(__file__).parent
 
@@ -65,6 +65,8 @@ SOUNDS = {
     "match": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "match.wav"),
     "next-level": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "next-level.wav"),
     "select": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "select.wav"),
+    "line_clear": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "killingspree.wav"),
+    "color_bomb": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "monsterkill.wav"),
 }
 
 pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "music.mp3")
