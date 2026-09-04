@@ -42,6 +42,9 @@ class Tile:
             border_radius=7,
         )
         
+        # Flag para rastrear si el power-up ha sido consumido
+        self.power_up_consumed = False
+        
         
     def is_power_up(self):
         if self.power_up is not None:
