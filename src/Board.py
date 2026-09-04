@@ -190,7 +190,7 @@ class Board:
     def generate_power_ups(self):
         for powerup in self.powerups:
             self.tiles[powerup.i][powerup.j] = powerup  
-   
+        self.powerups = []
    
     def activate_power_up(self, tile: Tile) -> List[Tile]:
         # Lista de baldosas afectadas por la activación del power-up
@@ -246,12 +246,10 @@ class Board:
                 elif len(match) >= 5:
                     self.calculate_power_ups(last_tile=power_tile, type="color_bomb")
                     
-            #verificar que un powerup haya hecho match 
-            activated_powerups: Set[Tile] = set()
+            
             for tile in match:
-                if tile.power_up is not None and tile not in activated_powerups:
+                if tile.power_up is not None :
                     power_up_matches = self.activate_power_up(tile)
-                    activated_powerups.add(tile)
                     if len(power_up_matches) > 1:
                         self.matches.append(power_up_matches)    
                     
@@ -260,13 +258,16 @@ class Board:
 
         return self.matches if len(self.matches) > 0 else None
 
-    def remove_matches(self) -> None:
+    def remove_matches(self, remove_powerups : Optional[bool] = False) -> None:
         for match in self.matches:
             for tile in match:
-                if tile.power_up is not None and not tile.power_up_consumed:
-                    # Power-up activo sin consumir - no lo removemos, se queda en el tablero
+                if tile.power_up is not None and remove_powerups == False:
                     continue
-                self.tiles[tile.i][tile.j] = None   
+                if tile.power_up is not None and remove_powerups == True:
+                    self.tiles[tile.i][tile.j] = None
+                
+                self.tiles[tile.i][tile.j] = None
+                 
         self.matches = []
 
     def get_falling_tiles(self) -> Tuple[Any, Dict[str, Any]]:

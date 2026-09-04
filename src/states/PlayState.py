@@ -80,8 +80,11 @@ class PlayState(BaseState):
         power_up_matches = self.board.activate_power_up(tile)
         if power_up_matches is not None:
             self.board.matches.append(power_up_matches)
+            self.board.remove_matches(True)
+            
         # Continuar con la lógica de caída de fichas
         # (remove_matches se llamará naturalmente en el siguiente _calculate_matches)
+        
         falling_tiles = self.board.get_falling_tiles()
         Timer.tween(
             0.70,
