@@ -53,9 +53,9 @@ class Board:
         ]
         for i in range(settings.BOARD_HEIGHT):
             for j in range(settings.BOARD_WIDTH):
-                color = random.randint(15, settings.NUM_COLORS - 1)
+                color = random.randint(14, settings.NUM_COLORS - 1)
                 while self._is_match_generated(i, j, color):
-                    color = random.randint(15, settings.NUM_COLORS - 1)
+                    color = random.randint(14, settings.NUM_COLORS - 1)
 
                 self.tiles[i][j] = Tile(
                     i, j, color, random.randint(0, settings.NUM_VARIETIES - 1)
@@ -84,7 +84,7 @@ class Board:
                         
                         if matches is not None:
                             return True
-
+                    
                 # Probar intercambio con el vecino inferior (i + 1)
                 if i + 1 < settings.BOARD_HEIGHT:
                     tile2 = self.tiles[i + 1][j]
@@ -101,6 +101,7 @@ class Board:
                         
                         if matches is not None:
                             return True
+                      
         return False
 
     def _calculate_match_rec(self, tile: Tile) -> Set[Tile]:
@@ -175,6 +176,10 @@ class Board:
         return match
 
     def calculate_power_ups(self, last_tile: Tile, type: str) -> None:
+        valid_types = {"line_clear", "color_bomb"}
+        if type not in valid_types:
+            raise ValueError(f"Tipo de power-up inválido: {type}. Use {valid_types}")
+        
         # Generar power-up en la posición de la última baldosa movida,
         # heredando el color de las baldosas combinadas
         i = last_tile.i
@@ -203,16 +208,16 @@ class Board:
                 t = self.tiles[i_idx][tile.j]
                 if t and t not in matched_tiles:
                     matched_tiles.append(t)
-                    
+            settings.SOUNDS["line_clear"].play()        
         # Si es Bomba de Color (5+ baldosas), destruye todas las baldosas del mismo color en el tablero
         elif tile.power_up == "color_bomb":
             for row in self.tiles:
                 for t in row:
                     if t and t.color == tile.color and t not in matched_tiles:
                         matched_tiles.append(t)
-                        
-        # Consumir el power-up para que no se active repetidamente
-        tile.power_up = None
+            settings.SOUNDS["color_bomb"].play()            
+        # Marcar power-up como consumido (su efecto ya se aplicó)
+        tile.power_up_consumed = True
         return matched_tiles
 
     def calculate_matches_for(self, new_tiles: List[Tile], last_moved: Optional[Tile] = None) -> Optional[List[List[Tile]]]:
@@ -242,10 +247,12 @@ class Board:
                     self.calculate_power_ups(last_tile=power_tile, type="color_bomb")
                     
             #verificar que un powerup haya hecho match 
+            activated_powerups: Set[Tile] = set()
             for tile in match:
-                if tile.power_up is not None:
-                    power_up_matches =  self.activate_power_up(tile)
-                    if power_up_matches is not None:
+                if tile.power_up is not None and tile not in activated_powerups:
+                    power_up_matches = self.activate_power_up(tile)
+                    activated_powerups.add(tile)
+                    if len(power_up_matches) > 1:
                         self.matches.append(power_up_matches)    
                     
         delattr(self, "in_match")
@@ -256,7 +263,8 @@ class Board:
     def remove_matches(self) -> None:
         for match in self.matches:
             for tile in match:
-                if tile.power_up is not None:
+                if tile.power_up is not None and not tile.power_up_consumed:
+                    # Power-up activo sin consumir - no lo removemos, se queda en el tablero
                     continue
                 self.tiles[tile.i][tile.j] = None   
         self.matches = []
